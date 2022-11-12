@@ -10,7 +10,7 @@ import {
 } from "react-bootstrap";
 import { useMutation, useQuery } from "@apollo/client";
 import { GET_ME } from "../utils/queries";
-import { SAVE_BOOK } from "../utils/mutations";
+import { SAVE_BOOK } from "../utils/mutation";
 import Auth from "../utils/auth";
 import { searchGoogleBooks } from "../utils/API";
 import { saveBookIds, getSavedBookIds } from "../utils/localStorage";
@@ -24,8 +24,8 @@ const SearchBooks = () => {
   // create state to hold saved bookId values
   const [savedBookIds, setSavedBookIds] = useState(getSavedBookIds());
   const [saveBook, { error }] = useMutation(SAVE_BOOK);
-  const { loading, data } = useQuery(QUERY_TECH);
-  const user = data?.me || [];
+  const { data } = useQuery(GET_ME);
+  const user = data?.me || {};
 
   // set up useEffect hook to save `savedBookIds` list to localStorage on component unmount
   // learn more here: https://reactjs.org/docs/hooks-effect.html#effects-with-cleanup
@@ -52,10 +52,10 @@ const SearchBooks = () => {
 
       const bookData = items.map((book) => ({
         bookId: book.id,
-        authors: book.volumeInfo.authors || ["No author to display"],
+        authors: book.volumeInfo.authors,
         title: book.volumeInfo.title,
         description: book.volumeInfo.description,
-        image: book.volumeInfo.imageLinks?.thumbnail || "",
+        image: book.volumeInfo.imageLinks?.thumbnail,
       }));
 
       setSearchedBooks(bookData);
@@ -69,7 +69,6 @@ const SearchBooks = () => {
   const handleSaveBook = async (bookId) => {
     // find the book in `searchedBooks` state by the matching id
     const bookToSave = searchedBooks.find((book) => book.bookId === bookId);
-
     // get token
     const token = Auth.loggedIn() ? Auth.getToken() : null;
 
@@ -77,19 +76,18 @@ const SearchBooks = () => {
       return false;
     }
 
-    const [bookData, setBookData] = useState({
-      tech1: "JavaScript",
-      tech2: "JavaScript",
-    });
-
     try {
       const { data } = await saveBook({
-        variables: { ...bookData },
+        variables: {
+          userId: user._id,
+          bookId: bookToSave.bookId,
+          authors: bookToSave.authors,
+          title: bookToSave.title,
+          description: bookToSave.description,
+          image: bookToSave.image,
+          link: bookToSave.link,
+        },
       });
-
-      if (!response.ok) {
-        throw new Error("something went wrong!");
-      }
 
       // if book successfully saves to user's account, save book id to state
       setSavedBookIds([...savedBookIds, bookToSave.bookId]);
