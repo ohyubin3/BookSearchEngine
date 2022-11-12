@@ -1,47 +1,47 @@
 const { AuthenticationError } = require("apollo-server-express");
-const { Profile } = require("../models");
+const { User, Book } = require("../models");
 const { signToken } = require("../utils/auth");
 
 const resolvers = {
   Query: {
-    profiles: async () => {
-      return Profile.find();
+    books: async () => {
+      return Book.find();
     },
 
-    profile: async (parent, { profileId }) => {
-      return Profile.findOne({ _id: profileId });
+    user: async (parent, { userId }) => {
+      return Book.findOne({ _id: userId });
     },
     // By adding context to our query, we can retrieve the logged in user without specifically searching for them
     me: async (parent, args, context) => {
       if (context.user) {
-        return Profile.findOne({ _id: context.user._id });
+        return Book.findOne({ _id: context.user._id });
       }
       throw new AuthenticationError("You need to be logged in!");
     },
   },
 
   Mutation: {
-    addProfile: async (parent, { name, email, password }) => {
-      const profile = await Profile.create({ name, email, password });
-      const token = signToken(profile);
+    addUser: async (parent, { name, email, password }) => {
+      const user = await Book.create({ name, email, password });
+      const token = signToken(user);
 
-      return { token, profile };
+      return { token, user };
     },
     login: async (parent, { email, password }) => {
-      const profile = await Profile.findOne({ email });
+      const user = await Book.findOne({ email });
 
-      if (!profile) {
-        throw new AuthenticationError("No profile with this email found!");
+      if (!user) {
+        throw new AuthenticationError("No user with this email found!");
       }
 
-      const correctPw = await profile.isCorrectPassword(password);
+      const correctPw = await user.isCorrectPassword(password);
 
       if (!correctPw) {
         throw new AuthenticationError("Incorrect password!");
       }
 
-      const token = signToken(profile);
-      return { token, profile };
+      const token = signToken(user);
+      return { token, user };
     },
 
     // Add a third argument to the resolver to access data in our `context`
